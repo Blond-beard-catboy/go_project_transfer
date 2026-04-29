@@ -33,6 +33,7 @@ func main() {
 
 	r.Post("/api/cargo", cargoHandler.Create)
 	r.Get("/api/cargo", cargoHandler.List)
+	r.Get("/api/cargo/{id}", cargoHandler.GetByID)
 
 	log.Printf("Cargo Service starting on port %s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {

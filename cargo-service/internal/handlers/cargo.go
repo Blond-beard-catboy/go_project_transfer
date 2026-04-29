@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"go_project_transfer/cargo-service/internal/models"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type CargoHandler struct {
@@ -59,6 +61,34 @@ func (h *CargoHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Status:           "pending",
 		CreatedAt:        time.Now(),
 	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(cargo)
+}
+
+func (h *CargoHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid cargo id", http.StatusBadRequest)
+		return
+	}
+
+	var cargo models.Cargo
+	query := `SELECT id, title, description, weight, pickup_location, delivery_location, pickup_date, delivery_date, owner_id, status, created_at
+              FROM cargos WHERE id = $1`
+	row := h.db.QueryRow(query, id)
+	err = row.Scan(&cargo.ID, &cargo.Title, &cargo.Description, &cargo.Weight,
+		&cargo.PickupLocation, &cargo.DeliveryLocation, &cargo.PickupDate,
+		&cargo.DeliveryDate, &cargo.OwnerID, &cargo.Status, &cargo.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Cargo not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Database error", http.StatusInternalServerError)
+		}
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(cargo)
 }
