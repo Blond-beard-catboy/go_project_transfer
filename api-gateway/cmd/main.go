@@ -24,6 +24,7 @@ func main() {
 	userProxy := proxy.NewProxy(cfg.UserServiceURL)
 	cargoProxy := proxy.NewProxy(cfg.CargoServiceURL)
 	routeProxy := proxy.NewProxy(cfg.RouteServiceURL)
+	orderProxy := proxy.NewProxy(cfg.OrderServiceURL)
 
 	r := chi.NewRouter()
 	r.Use(chimiddleware.Logger)
@@ -57,6 +58,9 @@ func main() {
 	// Прокси для route-service (защищённые)
 	r.Handle("/api/routes", routeProxy)
 	r.Handle("/api/routes/*", routeProxy)
+
+	r.Handle("/api/orders", orderProxy)
+	r.Handle("/api/orders/*", orderProxy)
 
 	log.Printf("API Gateway starting on port %s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {

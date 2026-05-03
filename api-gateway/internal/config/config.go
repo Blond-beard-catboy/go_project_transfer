@@ -9,6 +9,7 @@ type Config struct {
 	UserServiceURL  string
 	CargoServiceURL string
 	RouteServiceURL string
+	OrderServiceURL string
 	JWTSecret       string
 }
 
@@ -18,6 +19,7 @@ func Load() *Config {
 		UserServiceURL:  getEnv("USER_SERVICE_URL", "http://localhost:8000"),
 		CargoServiceURL: getEnv("CARGO_SERVICE_URL", "http://localhost:8001"),
 		RouteServiceURL: getEnv("ROUTE_SERVICE_URL", "http://localhost:8003"),
+		OrderServiceURL: getEnv("ORDER_SERVICE_URL", "http://localhost:8004"),
 		JWTSecret:       getEnv("JWT_SECRET", "super-secret-key"),
 	}
 }
