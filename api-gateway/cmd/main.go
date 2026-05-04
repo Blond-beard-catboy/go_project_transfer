@@ -29,7 +29,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(chimiddleware.Logger)
 	r.Use(chimiddleware.Recoverer)
-	r.Use(myauth.JWTAuthMiddleware(cfg.JWTSecret))
+	//r.Use(myauth.JWTAuthMiddleware(cfg.JWTSecret))
 
 	// Добавляем заголовки X-User-ID и X-User-Role для проксируемых запросов
 	r.Use(func(next http.Handler) http.Handler {
