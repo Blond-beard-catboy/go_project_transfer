@@ -30,7 +30,7 @@ func main() {
 	orderRepo := repository.NewOrderRepository(database)
 	cargoClient := clients.NewCargoClient(cfg.CargoServiceURL)
 	routeClient := clients.NewRouteClient(cfg.RouteServiceURL)
-	orderHandler := handlers.NewOrderHandler(orderRepo, cargoClient, routeClient)
+	orderHandler := handlers.NewOrderHandler(orderRepo, cargoClient, routeClient, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

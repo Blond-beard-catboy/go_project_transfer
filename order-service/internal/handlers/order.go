@@ -3,10 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"go_project_transfer/order-service/internal/clients"
+	"go_project_transfer/order-service/internal/config"
 	"go_project_transfer/order-service/internal/models"
 	"go_project_transfer/order-service/internal/repository"
 )
@@ -15,13 +18,20 @@ type OrderHandler struct {
 	repo        *repository.OrderRepository
 	cargoClient *clients.CargoClient
 	routeClient *clients.RouteClient
+	cfg         *config.Config
 }
 
-func NewOrderHandler(repo *repository.OrderRepository, cargoClient *clients.CargoClient, routeClient *clients.RouteClient) *OrderHandler {
+func NewOrderHandler(
+	repo *repository.OrderRepository,
+	cargoClient *clients.CargoClient,
+	routeClient *clients.RouteClient,
+	cfg *config.Config,
+) *OrderHandler {
 	return &OrderHandler{
 		repo:        repo,
 		cargoClient: cargoClient,
 		routeClient: routeClient,
+		cfg:         cfg,
 	}
 }
 
@@ -90,31 +100,52 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(order)
 }
 
-// confirmOrder – подтверждение заказа (генерация PDF, уведомление, платёж – заглушки)
 func (h *OrderHandler) ConfirmOrder(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Path[len("/api/orders/"):]
-	id, err := strconv.Atoi(idStr[:len(idStr)-len("/confirm")])
+	// Извлекаем ID заказа из URL (последний сегмент)
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 4 {
+		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
+	idStr := parts[len(parts)-2] // предпоследний элемент – это id
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid order id", http.StatusBadRequest)
 		return
 	}
 
+	// Получаем заказ
 	order, err := h.repo.GetByID(id)
-	if err != nil || order.Status != "new" {
+	if err != nil {
+		http.Error(w, "Order not found", http.StatusNotFound)
+		return
+	}
+	if order.Status != "new" {
 		http.Error(w, "Order cannot be confirmed", http.StatusBadRequest)
 		return
 	}
 
-	// имитация генерации PDF (заглушка)
+	// Генерируем PDF (заглушка)
 	contractFile := fmt.Sprintf("/contracts/order_%d.pdf", order.ID)
 	if err := h.repo.UpdateStatus(order.ID, "confirmed", &contractFile); err != nil {
 		http.Error(w, "Failed to confirm order", http.StatusInternalServerError)
 		return
 	}
 
-	// здесь можно вызвать Notification Service и Payment Service (заглушки)
-	// ...
+	// Отправляем уведомление (если конфиг содержит URL)
+	if h.cfg != nil && h.cfg.NotificationServiceURL != "" {
+		notifClient := clients.NewNotificationClient(h.cfg.NotificationServiceURL)
+		subject := "Order confirmed"
+		body := fmt.Sprintf("Your order #%d has been confirmed", order.ID)
+		if err := notifClient.SendNotification(order.CustomerID, subject, body); err != nil {
+			log.Printf("Failed to send notification: %v", err)
+		}
+	}
 
+	// Ответ клиенту
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "confirmed", "contract_file": contractFile})
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":        "confirmed",
+		"contract_file": contractFile,
+	})
 }

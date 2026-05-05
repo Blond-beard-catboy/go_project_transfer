@@ -32,8 +32,8 @@ func Load() *Config {
 
 		CargoServiceURL:        getEnv("CARGO_SERVICE_URL", "http://localhost:8001"),
 		RouteServiceURL:        getEnv("ROUTE_SERVICE_URL", "http://localhost:8003"),
-		NotificationServiceURL: getEnv("NOTIFICATION_SERVICE_URL", "http://localhost:8005"),
-		PaymentServiceURL:      getEnv("PAYMENT_SERVICE_URL", "http://localhost:8006"),
+		NotificationServiceURL: getEnv("NOTIFICATION_SERVICE_URL", "http://localhost:8006"),
+		PaymentServiceURL:      getEnv("PAYMENT_SERVICE_URL", "http://localhost:8007"),
 	}
 }
 

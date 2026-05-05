@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS route_points;
+DROP TABLE IF EXISTS routes;
