@@ -15,10 +15,11 @@ import (
 )
 
 type OrderHandler struct {
-	repo        *repository.OrderRepository
-	cargoClient *clients.CargoClient
-	routeClient *clients.RouteClient
-	cfg         *config.Config
+	repo          *repository.OrderRepository
+	cargoClient   *clients.CargoClient
+	routeClient   *clients.RouteClient
+	paymentClient *clients.PaymentClient
+	cfg           *config.Config
 }
 
 func NewOrderHandler(
@@ -26,12 +27,14 @@ func NewOrderHandler(
 	cargoClient *clients.CargoClient,
 	routeClient *clients.RouteClient,
 	cfg *config.Config,
+	paymentClient *clients.PaymentClient,
 ) *OrderHandler {
 	return &OrderHandler{
-		repo:        repo,
-		cargoClient: cargoClient,
-		routeClient: routeClient,
-		cfg:         cfg,
+		repo:          repo,
+		cargoClient:   cargoClient,
+		routeClient:   routeClient,
+		cfg:           cfg,
+		paymentClient: paymentClient,
 	}
 }
 
@@ -139,6 +142,14 @@ func (h *OrderHandler) ConfirmOrder(w http.ResponseWriter, r *http.Request) {
 		body := fmt.Sprintf("Your order #%d has been confirmed", order.ID)
 		if err := notifClient.SendNotification(order.CustomerID, subject, body); err != nil {
 			log.Printf("Failed to send notification: %v", err)
+		}
+	}
+
+	// Добавляем создание платежа
+	if h.paymentClient != nil {
+		amount := 1000.0 // или рассчитайте из веса груза, например
+		if err := h.paymentClient.CreatePayment(order.ID, amount); err != nil {
+			log.Printf("Failed to create payment: %v", err)
 		}
 	}
 
