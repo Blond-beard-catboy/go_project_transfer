@@ -1,0 +1,6 @@
+CREATE DATABASE user_db;
+CREATE DATABASE cargo_db;
+CREATE DATABASE route_db;
+CREATE DATABASE order_db;
+CREATE DATABASE notification_db;
+CREATE DATABASE payment_db;

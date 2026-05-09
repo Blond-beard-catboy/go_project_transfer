@@ -38,8 +38,8 @@ func Load() *Config {
 }
 
 func (c *Config) GetDBConnString() string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		c.DBHost, c.DBPort, c.DBUser, c.DBPassword, c.DBName)
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName)
 }
 
 func getEnv(key, defaultValue string) string {

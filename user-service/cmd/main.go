@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
+	"go_project_transfer/pkg/migrate"
 	"go_project_transfer/user-service/internal/config"
 	"go_project_transfer/user-service/internal/db"
 	"go_project_transfer/user-service/internal/handlers"
@@ -21,6 +22,12 @@ func main() {
 	}
 
 	cfg := config.Load()
+	dbURL := cfg.GetDBConnString()
+
+	if err := migrate.Run("file://./user-service/migrations", dbURL); err != nil {
+		log.Fatal("Migration failed:", err)
+	}
+
 	database, err := db.Connect(cfg)
 	if err != nil {
 		log.Fatal("Database connection error:", err)

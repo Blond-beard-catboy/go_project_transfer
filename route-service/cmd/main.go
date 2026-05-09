@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 
+	"go_project_transfer/pkg/migrate"
 	"go_project_transfer/route-service/internal/clients"
 	"go_project_transfer/route-service/internal/config"
 	"go_project_transfer/route-service/internal/db"
@@ -21,7 +22,14 @@ func main() {
 	}
 
 	cfg := config.Load()
+	dbURL := cfg.GetDBConnString()
+
+	if err := migrate.Run("file://./route-service/migrations", dbURL); err != nil {
+		log.Fatal("Migration failed:", err)
+	}
+
 	database, err := db.Connect(cfg)
+
 	if err != nil {
 		log.Fatal("Database connection error:", err)
 	}

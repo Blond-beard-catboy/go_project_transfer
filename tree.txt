@@ -1,0 +1,137 @@
+.
+├── api-gateway
+│   ├── cmd
+│   │   └── main.go
+│   ├── Dockerfile
+│   └── internal
+│       ├── config
+│       │   └── config.go
+│       ├── middleware
+│       │   └── auth.go
+│       └── proxy
+│           └── proxy.go
+├── cargo-service
+│   ├── cmd
+│   │   └── main.go
+│   ├── Dockerfile
+│   ├── internal
+│   │   ├── config
+│   │   │   └── config.go
+│   │   ├── db
+│   │   │   └── db.go
+│   │   ├── handlers
+│   │   │   └── cargo.go
+│   │   └── models
+│   │       └── cargo.go
+│   └── migrations
+│       ├── 000001_init_schema.down.sql
+│       └── 000001_init_schema.up.sql
+├── CONTEXT.md
+├── docker-compose.yml
+├── go.mod
+├── go.sum
+├── LICENSE
+├── notification-service
+│   ├── cmd
+│   │   └── main.go
+│   ├── internal
+│   │   ├── config
+│   │   │   └── config.go
+│   │   ├── db
+│   │   │   └── db.go
+│   │   ├── handlers
+│   │   │   └── notification.go
+│   │   ├── models
+│   │   │   └── notification.go
+│   │   └── repository
+│   │       └── notification_repo.go
+│   └── migrations
+│       ├── 000001_init_schema.down.sql
+│       └── 000001_init_schema.up.sql
+├── order-service
+│   ├── cmd
+│   │   └── main.go
+│   ├── Dockerfile
+│   ├── internal
+│   │   ├── clients
+│   │   │   ├── cargo_client.go
+│   │   │   ├── notification_client.go
+│   │   │   ├── payment_client.go
+│   │   │   └── route_client.go
+│   │   ├── config
+│   │   │   └── config.go
+│   │   ├── db
+│   │   │   └── db.go
+│   │   ├── handlers
+│   │   │   └── order.go
+│   │   ├── models
+│   │   │   └── order.go
+│   │   └── repository
+│   │       └── order_repo.go
+│   └── migrations
+│       ├── 000001_init_schema.down.sql
+│       └── 000001_init_schema.up.sql
+├── payment-service
+│   ├── cmd
+│   │   └── main.go
+│   ├── internal
+│   │   ├── config
+│   │   │   └── config.go
+│   │   ├── db
+│   │   │   └── db.go
+│   │   ├── handlers
+│   │   │   └── payment.go
+│   │   ├── models
+│   │   │   └── payment.go
+│   │   └── repository
+│   │       └── payment_repo.go
+│   └── migrations
+│       ├── 000001_init_schema.down.sql
+│       └── 000001_init_schema.up.sql
+├── pkg
+│   └── migrate
+│       └── migrate.go
+├── README.md
+├── route-service
+│   ├── cmd
+│   │   └── main.go
+│   ├── Dockerfile
+│   ├── internal
+│   │   ├── clients
+│   │   │   └── cargo_client.go
+│   │   ├── config
+│   │   │   └── config.go
+│   │   ├── db
+│   │   │   └── db.go
+│   │   ├── handlers
+│   │   │   └── route.go
+│   │   ├── models
+│   │   │   └── route.go
+│   │   └── repository
+│   │       └── route_repo.go
+│   └── migrations
+│       ├── 000001_init_schema.down.sql
+│       └── 000001_init_schema.up.sql
+├── scripts
+│   └── init-databases.sql
+├── tree.txt
+└── user-service
+    ├── cmd
+    │   └── main.go
+    ├── Dockerfile
+    ├── internal
+    │   ├── config
+    │   │   └── config.go
+    │   ├── db
+    │   │   └── db.go
+    │   ├── handlers
+    │   │   └── auth.go
+    │   ├── models
+    │   │   └── user.go
+    │   └── repository
+    │       └── user_repo.go
+    └── migrations
+        ├── 000001_init_schema.down.sql
+        └── 000001_init_schema.up.sql
+
+65 directories, 70 files

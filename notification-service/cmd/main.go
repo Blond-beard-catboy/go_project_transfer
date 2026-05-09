@@ -12,6 +12,7 @@ import (
 	"go_project_transfer/notification-service/internal/db"
 	"go_project_transfer/notification-service/internal/handlers"
 	"go_project_transfer/notification-service/internal/repository"
+	"go_project_transfer/pkg/migrate"
 )
 
 func main() {
@@ -20,7 +21,15 @@ func main() {
 	}
 
 	cfg := config.Load()
+	dbURL := cfg.GetDBConnString()
+
+	if err := migrate.Run("file://./notification-service/migrations", dbURL); err != nil {
+		log.Fatal("Migration failed:", err)
+
+	}
+
 	database, err := db.Connect(cfg)
+
 	if err != nil {
 		log.Fatal("Database connection error:", err)
 	}
