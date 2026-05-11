@@ -25,6 +25,8 @@ func main() {
 	cargoProxy := proxy.NewProxy(cfg.CargoServiceURL)
 	routeProxy := proxy.NewProxy(cfg.RouteServiceURL)
 	orderProxy := proxy.NewProxy(cfg.OrderServiceURL)
+	notifProxy := proxy.NewProxy(cfg.NotificationServiceURL)
+	paymentProxy := proxy.NewProxy(cfg.PaymentServiceURL)
 
 	r := chi.NewRouter()
 	r.Use(chimiddleware.Logger)
@@ -44,7 +46,7 @@ func main() {
 		})
 	})
 
-	// Публичные маршруты (регистрация, логин)
+	// Публичные маршруты
 	r.HandleFunc("/api/register", userProxy.ServeHTTP)
 	r.HandleFunc("/api/login", userProxy.ServeHTTP)
 
@@ -59,8 +61,19 @@ func main() {
 	r.Handle("/api/routes", routeProxy)
 	r.Handle("/api/routes/*", routeProxy)
 
+	//прокси для order-service
 	r.Handle("/api/orders", orderProxy)
 	r.Handle("/api/orders/*", orderProxy)
+
+	//прокси для notification-service
+	r.Handle("/api/notifications", notifProxy)
+	r.Handle("/api/notifications/*", notifProxy)
+	r.Handle("/api/notify", notifProxy)
+	r.Handle("/api/notify/*", notifProxy)
+
+	//прокси для payment-service
+	r.Handle("/api/payments", paymentProxy)
+	r.Handle("/api/payments/*", paymentProxy)
 
 	log.Printf("API Gateway starting on port %s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {

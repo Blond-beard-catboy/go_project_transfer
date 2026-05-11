@@ -23,7 +23,7 @@ func main() {
 	cfg := config.Load()
 	dbURL := cfg.GetDBConnString()
 
-	if err := migrate.Run("file://./payment-service/migrations", dbURL); err != nil {
+	if err := migrate.Run("file://./migrations", dbURL); err != nil {
 		log.Fatal("Migration failed:", err)
 
 	}

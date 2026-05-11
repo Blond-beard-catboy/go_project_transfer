@@ -18,6 +18,171 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - microservices-net
+
+  user-service:
+    build:
+      context: .
+      dockerfile: ./user-service/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      USER_SERVICE_PORT: 8000
+      USER_SERVICE_DB_HOST: postgres
+      USER_SERVICE_DB_PORT: 5432
+      USER_SERVICE_DB_USER: postgres
+      USER_SERVICE_DB_PASSWORD: postgres
+      USER_SERVICE_DB_NAME: user_db
+      JWT_SECRET: super-secret-key
+      JWT_EXPIRATION_HOURS: 24
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-net
+    restart: on-failure
+
+  cargo-service:
+    build:
+      context: .
+      dockerfile: ./cargo-service/Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      CARGO_SERVICE_PORT: 8001
+      CARGO_SERVICE_DB_HOST: postgres
+      CARGO_SERVICE_DB_PORT: 5432
+      CARGO_SERVICE_DB_USER: postgres
+      CARGO_SERVICE_DB_PASSWORD: postgres
+      CARGO_SERVICE_DB_NAME: cargo_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-net
+    restart: on-failure
+
+  route-service:
+    build:
+      context: .
+      dockerfile: ./route-service/Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      ROUTE_SERVICE_PORT: 8002
+      ROUTE_SERVICE_DB_HOST: postgres
+      ROUTE_SERVICE_DB_PORT: 5432
+      ROUTE_SERVICE_DB_USER: postgres
+      ROUTE_SERVICE_DB_PASSWORD: postgres
+      ROUTE_SERVICE_DB_NAME: route_db
+      CARGO_SERVICE_URL: http://cargo-service:8001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cargo-service:
+        condition: service_started
+    networks:
+      - microservices-net
+    restart: on-failure
+
+  order-service:
+    build:
+      context: .
+      dockerfile: ./order-service/Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      ORDER_SERVICE_PORT: 8003
+      ORDER_SERVICE_DB_HOST: postgres
+      ORDER_SERVICE_DB_PORT: 5432
+      ORDER_SERVICE_DB_USER: postgres
+      ORDER_SERVICE_DB_PASSWORD: postgres
+      ORDER_SERVICE_DB_NAME: order_db
+      CARGO_SERVICE_URL: http://cargo-service:8001
+      ROUTE_SERVICE_URL: http://route-service:8002
+      NOTIFICATION_SERVICE_URL: http://notification-service:8006
+      PAYMENT_SERVICE_URL: http://payment-service:8007
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cargo-service:
+        condition: service_started
+      route-service:
+        condition: service_started
+    networks:
+      - microservices-net
+    restart: on-failure
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./notification-service/Dockerfile
+    ports:
+      - "8006:8006"
+    environment:
+      NOTIFICATION_SERVICE_PORT: 8006
+      NOTIFICATION_SERVICE_DB_HOST: postgres
+      NOTIFICATION_SERVICE_DB_PORT: 5432
+      NOTIFICATION_SERVICE_DB_USER: postgres
+      NOTIFICATION_SERVICE_DB_PASSWORD: postgres
+      NOTIFICATION_SERVICE_DB_NAME: notification_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-net
+    restart: on-failure
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: ./payment-service/Dockerfile
+    ports:
+      - "8007:8007"
+    environment:
+      PAYMENT_SERVICE_PORT: 8007
+      PAYMENT_SERVICE_DB_HOST: postgres
+      PAYMENT_SERVICE_DB_PORT: 5432
+      PAYMENT_SERVICE_DB_USER: postgres
+      PAYMENT_SERVICE_DB_PASSWORD: postgres
+      PAYMENT_SERVICE_DB_NAME: payment_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-net
+    restart: on-failure
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      PORT: 8005
+      USER_SERVICE_URL: http://user-service:8000
+      CARGO_SERVICE_URL: http://cargo-service:8001
+      ROUTE_SERVICE_URL: http://route-service:8002
+      ORDER_SERVICE_URL: http://order-service:8003
+      NOTIFICATION_SERVICE_URL: http://notification-service:8006
+      PAYMENT_SERVICE_URL: http://payment-service:8007
+      JWT_SECRET: super-secret-key
+    depends_on:
+      - user-service
+      - cargo-service
+      - route-service
+      - order-service
+      - notification-service
+      - payment-service
+    networks:
+      - microservices-net
+    restart: on-failure
+
+networks:
+  microservices-net:
+    driver: bridge
 
 volumes:
   postgres_data:
