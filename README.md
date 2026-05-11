@@ -1,196 +1,153 @@
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/actions/workflow/status/golang-migrate/migrate/ci.yaml?branch=master)](https://github.com/golang-migrate/migrate/actions/workflows/ci.yaml?query=branch%3Amaster)
-[![GoDoc](https://pkg.go.dev/badge/github.com/golang-migrate/migrate)](https://pkg.go.dev/github.com/golang-migrate/migrate/v4)
-[![Coverage Status](https://img.shields.io/coveralls/github/golang-migrate/migrate/master.svg)](https://coveralls.io/github/golang-migrate/migrate?branch=master)
-[![packagecloud.io](https://img.shields.io/badge/deb-packagecloud.io-844fec.svg)](https://packagecloud.io/golang-migrate/migrate?filter=debs)
-[![Docker Pulls](https://img.shields.io/docker/pulls/migrate/migrate.svg)](https://hub.docker.com/r/migrate/migrate/)
-![Supported Go Versions](https://img.shields.io/badge/Go-1.20%2C%201.21-lightgrey.svg)
-[![GitHub Release](https://img.shields.io/github/release/golang-migrate/migrate.svg)](https://github.com/golang-migrate/migrate/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/golang-migrate/migrate/v4)](https://goreportcard.com/report/github.com/golang-migrate/migrate/v4)
+# Микросервисная система управления грузоперевозками (Go)
 
-# migrate
+Данный проект представляет собой полнофункциональную систему для организации грузоперевозок, построенную на микросервисной архитектуре на языке Go. Система включает аутентификацию, управление грузами, маршрутами, заказами, уведомлениями и платежами. Все микросервисы контейнеризированы и могут быть легко развёрнуты с помощью Docker Compose.
 
-__Database migrations written in Go. Use as [CLI](#cli-usage) or import as [library](#use-in-your-go-project).__
+## Основные возможности
 
-* Migrate reads migrations from [sources](#migration-sources)
-   and applies them in correct order to a [database](#databases).
-* Drivers are "dumb", migrate glues everything together and makes sure the logic is bulletproof.
-   (Keeps the drivers lightweight, too.)
-* Database drivers don't assume things or try to correct user input. When in doubt, fail.
+- Регистрация и аутентификация пользователей (JWT).
+- Управление грузами (CRUD, фильтрация по владельцу).
+- Построение маршрутов и добавление грузов с автоматическим созданием точек погрузки/разгрузки.
+- Оформление заказов с привязкой к грузу и маршруту, генерация PDF-договора.
+- Эмуляция отправки уведомлений (email/SMS) с сохранением в базу.
+- Управление платежами и имитация оплаты.
+- Единый API Gateway с проверкой JWT и маршрутизацией запросов к микросервисам.
+- Автоматические миграции базы данных при запуске сервисов.
+- Полная контейнеризация через Docker Compose.
 
-Forked from [mattes/migrate](https://github.com/mattes/migrate)
+## Технологический стек
 
-## Databases
+- **Язык:** Go 1.24
+- **Веб-фреймворк:** - в проекте используется `chi` для маршрутизации.
+- **Базы данных:** PostgreSQL (отдельная база на сервис)
+- **Аутентификация:** JWT (golang-jwt), bcrypt
+- **Миграции:** golang-migrate
+- **Контейнеризация:** Docker, Docker Compose
+- **Межсервисное взаимодействие:** HTTP (c использованием `httpx` в Go – `net/http`)
 
-Database drivers run migrations. [Add a new database?](database/driver.go)
+## Состав микросервисов
 
-* [PostgreSQL](database/postgres)
-* [PGX v4](database/pgx)
-* [PGX v5](database/pgx/v5)
-* [Redshift](database/redshift)
-* [Ql](database/ql)
-* [Cassandra / ScyllaDB](database/cassandra)
-* [SQLite](database/sqlite)
-* [SQLite3](database/sqlite3) ([todo #165](https://github.com/mattes/migrate/issues/165))
-* [SQLCipher](database/sqlcipher)
-* [MySQL / MariaDB](database/mysql)
-* [Neo4j](database/neo4j)
-* [MongoDB](database/mongodb)
-* [CrateDB](database/crate) ([todo #170](https://github.com/mattes/migrate/issues/170))
-* [Shell](database/shell) ([todo #171](https://github.com/mattes/migrate/issues/171))
-* [Google Cloud Spanner](database/spanner)
-* [CockroachDB](database/cockroachdb)
-* [YugabyteDB](database/yugabytedb)
-* [ClickHouse](database/clickhouse)
-* [Firebird](database/firebird)
-* [MS SQL Server](database/sqlserver)
-* [RQLite](database/rqlite)
+| Сервис | Порт | База данных | Назначение |
+|--------|------|-------------|------------|
+| User Service | 8000 | `user_db` | Регистрация, аутентификация, JWT |
+| Cargo Service | 8001 | `cargo_db` | CRUD грузов |
+| Route Service | 8002 | `route_db` | Управление маршрутами и точками |
+| Order Service | 8003 | `order_db` | Заказы, PDF, интеграция |
+| Notification Service | 8006 | `notification_db` | Уведомления (эмуляция) |
+| Payment Service | 8007 | `payment_db` | Платежи |
+| API Gateway | 8005 | — | Единая точка входа, аутентификация, прокси |
 
-### Database URLs
+## Запуск проекта
 
-Database connection strings are specified via URLs. The URL format is driver dependent but generally has the form: `dbdriver://username:password@host:port/dbname?param1=true&param2=false`
+### Предварительные требования
 
-Any [reserved URL characters](https://en.wikipedia.org/wiki/Percent-encoding#Percent-encoding_reserved_characters) need to be escaped. Note, the `%` character also [needs to be escaped](https://en.wikipedia.org/wiki/Percent-encoding#Percent-encoding_the_percent_character)
+- Docker и Docker Compose (версия 3.8+)
+- Git
 
-Explicitly, the following characters need to be escaped:
-`!`, `#`, `$`, `%`, `&`, `'`, `(`, `)`, `*`, `+`, `,`, `/`, `:`, `;`, `=`, `?`, `@`, `[`, `]`
+### Инструкция по запуску
 
-It's easiest to always run the URL parts of your DB connection URL (e.g. username, password, etc) through an URL encoder. See the example Python snippets below:
+1. **Клонируйте репозиторий**
+   ```bash
+   git clone <repository-url>
+   cd go_project_transfer
+   ```
 
-```bash
-$ python3 -c 'import urllib.parse; print(urllib.parse.quote(input("String to encode: "), ""))'
-String to encode: FAKEpassword!#$%&'()*+,/:;=?@[]
-FAKEpassword%21%23%24%25%26%27%28%29%2A%2B%2C%2F%3A%3B%3D%3F%40%5B%5D
-$ python2 -c 'import urllib; print urllib.quote(raw_input("String to encode: "), "")'
-String to encode: FAKEpassword!#$%&'()*+,/:;=?@[]
-FAKEpassword%21%23%24%25%26%27%28%29%2A%2B%2C%2F%3A%3B%3D%3F%40%5B%5D
-$
-```
+2. **(Опционально) Измените переменные окружения**  
+   Все настройки уже заданы в `docker-compose.yml` и в коде. При необходимости отредактируйте файл `scripts/init-databases.sql` для создания баз данных.
 
-## Migration Sources
+3. **Запустите все сервисы**
+   ```bash
+   docker-compose up --build
+   ```
 
-Source drivers read migrations from local or remote sources. [Add a new source?](source/driver.go)
+4. **Проверьте работоспособность**
+   - API Gateway доступен на `http://localhost:8005`
+   - Документация (Swagger) пока не реализована, но можно тестировать через curl.
 
-* [Filesystem](source/file) - read from filesystem
-* [io/fs](source/iofs) - read from a Go [io/fs](https://pkg.go.dev/io/fs#FS)
-* [Go-Bindata](source/go_bindata) - read from embedded binary data ([jteeuwen/go-bindata](https://github.com/jteeuwen/go-bindata))
-* [pkger](source/pkger) - read from embedded binary data ([markbates/pkger](https://github.com/markbates/pkger))
-* [GitHub](source/github) - read from remote GitHub repositories
-* [GitHub Enterprise](source/github_ee) - read from remote GitHub Enterprise repositories
-* [Bitbucket](source/bitbucket) - read from remote Bitbucket repositories
-* [Gitlab](source/gitlab) - read from remote Gitlab repositories
-* [AWS S3](source/aws_s3) - read from Amazon Web Services S3
-* [Google Cloud Storage](source/google_cloud_storage) - read from Google Cloud Platform Storage
+### Примеры запросов
 
-## CLI usage
+- **Регистрация**
+  ```bash
+  curl -X POST http://localhost:8005/api/register \
+    -H "Content-Type: application/json" \
+    -d '{"email":"user@example.com","password":"123","full_name":"User","role":"driver"}'
+  ```
 
-* Simple wrapper around this library.
-* Handles ctrl+c (SIGINT) gracefully.
-* No config search paths, no config files, no magic ENV var injections.
+- **Логин**
+  ```bash
+  curl -X POST http://localhost:8005/api/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"user@example.com","password":"123"}'
+  ```
 
-__[CLI Documentation](cmd/migrate)__
+- **Создание груза** (требуется токен)
+  ```bash
+  TOKEN=<your_jwt_token>
+  curl -X POST http://localhost:8005/api/cargo \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"title":"Груз","weight":100,"pickup_location":"A","delivery_location":"B","pickup_date":"2026-05-10T09:00:00Z","delivery_date":"2026-05-15T18:00:00Z","owner_id":1}'
+  ```
 
-### Basic usage
+- **Создание маршрута и добавление груза**
+  ```bash
+  curl -X POST http://localhost:8005/api/routes -H "Authorization: Bearer $TOKEN"
+  # Запомните route_id
+  curl -X POST http://localhost:8005/api/routes/1/cargo/1 -H "Authorization: Bearer $TOKEN"
+  ```
 
-```bash
-$ migrate -source file://path/to/migrations -database postgres://localhost:5432/database up 2
-```
+- **Создание заказа**
+  ```bash
+  curl -X POST http://localhost:8005/api/orders \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"cargo_id":1,"customer_id":1}'
+  ```
 
-### Docker usage
+- **Подтверждение заказа** (создаёт уведомление и платёж)
+  ```bash
+  curl -X POST http://localhost:8005/api/orders/1/confirm -H "Authorization: Bearer $TOKEN"
+  ```
 
-```bash
-$ docker run -v {{ migration dir }}:/migrations --network host migrate/migrate
-    -path=/migrations/ -database postgres://localhost:5432/database up 2
-```
+- **Просмотр платежей**
+  ```bash
+  curl -X GET http://localhost:8005/api/payments -H "Authorization: Bearer $TOKEN"
+  ```
 
-## Use in your Go project
-
-* API is stable and frozen for this release (v3 & v4).
-* Uses [Go modules](https://golang.org/cmd/go/#hdr-Modules__module_versions__and_more) to manage dependencies.
-* To help prevent database corruptions, it supports graceful stops via `GracefulStop chan bool`.
-* Bring your own logger.
-* Uses `io.Reader` streams internally for low memory overhead.
-* Thread-safe and no goroutine leaks.
-
-__[Go Documentation](https://pkg.go.dev/github.com/golang-migrate/migrate/v4)__
-
-```go
-import (
-    "github.com/golang-migrate/migrate/v4"
-    _ "github.com/golang-migrate/migrate/v4/database/postgres"
-    _ "github.com/golang-migrate/migrate/v4/source/github"
-)
-
-func main() {
-    m, err := migrate.New(
-        "github://mattes:personal-access-token@mattes/migrate_test",
-        "postgres://localhost:5432/database?sslmode=enable")
-    m.Steps(2)
-}
-```
-
-Want to use an existing database client?
-
-```go
-import (
-    "database/sql"
-    _ "github.com/lib/pq"
-    "github.com/golang-migrate/migrate/v4"
-    "github.com/golang-migrate/migrate/v4/database/postgres"
-    _ "github.com/golang-migrate/migrate/v4/source/file"
-)
-
-func main() {
-    db, err := sql.Open("postgres", "postgres://localhost:5432/database?sslmode=enable")
-    driver, err := postgres.WithInstance(db, &postgres.Config{})
-    m, err := migrate.NewWithDatabaseInstance(
-        "file:///migrations",
-        "postgres", driver)
-    m.Up() // or m.Step(2) if you want to explicitly set the number of migrations to run
-}
-```
-
-## Getting started
-
-Go to [getting started](GETTING_STARTED.md)
-
-## Tutorials
-
-* [CockroachDB](database/cockroachdb/TUTORIAL.md)
-* [PostgreSQL](database/postgres/TUTORIAL.md)
-
-(more tutorials to come)
-
-## Migration files
-
-Each migration has an up and down migration. [Why?](FAQ.md#why-two-separate-files-up-and-down-for-a-migration)
+## Остановка системы
 
 ```bash
-1481574547_create_users_table.up.sql
-1481574547_create_users_table.down.sql
+docker-compose down -v   # -v удаляет тома базы данных
 ```
 
-[Best practices: How to write migrations.](MIGRATIONS.md)
+## Структура проекта
 
-## Coming from another db migration tool?
+```
+.
+├── api-gateway/
+├── cargo-service/
+├── route-service/
+├── order-service/
+├── notification-service/
+├── payment-service/
+├── user-service/
+├── pkg/
+│   └── migrate/             # общий пакет миграций
+├── scripts/
+│   └── init-databases.sql   # создание баз данных
+├── docker-compose.yml
+└── README.md
+```
 
-Check out [migradaptor](https://github.com/musinit/migradaptor/).
-*Note: migradaptor is not affliated or supported by this project*
+## Дальнейшее развитие
 
-## Versions
+- Добавить сервисы: Parser, Cart, Analytics.
+- Реализовать автоматическую генерацию PDF с реальными данными.
+- Настроить централизованное логирование и метрики.
+- Написать сквозные тесты.
 
-Version | Supported? | Import | Notes
---------|------------|--------|------
-**master** | :white_check_mark: | `import "github.com/golang-migrate/migrate/v4"` | New features and bug fixes arrive here first |
-**v4** | :white_check_mark: | `import "github.com/golang-migrate/migrate/v4"` | Used for stable releases |
-**v3** | :x: | `import "github.com/golang-migrate/migrate"` (with package manager) or `import "gopkg.in/golang-migrate/migrate.v3"` (not recommended) | **DO NOT USE** - No longer supported |
+## Лицензия
 
-## Development and Contributing
+MIT
+```
 
-Yes, please! [`Makefile`](Makefile) is your friend,
-read the [development guide](CONTRIBUTING.md).
-
-Also have a look at the [FAQ](FAQ.md).
-
----
-
-Looking for alternatives? [https://awesome-go.com/#database](https://awesome-go.com/#database).
+Это README описывает проект, его возможности, запуск и примеры использования. Следующим файлом я предоставлю **ARCHITECTURE.md** с диаграммой и описанием взаимодействий.
